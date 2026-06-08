@@ -1,0 +1,90 @@
+# Superset production-oriented values profile
+# Fill all REPLACE_* before applying.
+
+image:
+  repository: apache/superset
+
+extraSecretEnv:
+  SUPERSET_SECRET_KEY: "REPLACE_WITH_STRONG_RANDOM"
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - superset.example.com
+  path: /
+  pathType: Prefix
+  tls:
+    - secretName: superset-tls
+      hosts:
+        - superset.example.com
+
+configOverrides:
+  production: |
+    ENABLE_PROXY_FIX = True
+    WTF_CSRF_ENABLED = True
+    ROW_LIMIT = 5000
+
+bootstrapScript: |
+  #!/bin/bash
+  uv pip install .[postgres]
+  if [ ! -f ~/bootstrap ]; then
+    echo "Running Superset with uid {{ .Values.runAsUser }}" > ~/bootstrap
+  fi
+
+init:
+  adminUser:
+    username: admin
+    firstname: Superset
+    lastname: Admin
+    email: admin@superset.local
+    password: "REPLACE_WITH_STRONG_ADMIN_PASSWORD"
+
+postgresql:
+  enabled: true
+  auth:
+    username: superset
+    password: "REPLACE_WITH_STRONG_PG_PASSWORD"
+    database: superset
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "REPLACE_WITH_STRONG_REDIS_PASSWORD"
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+supersetNode:
+  replicas:
+    enabled: true
+    replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+supersetWorker:
+  replicas:
+    enabled: true
+    replicaCount: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
