@@ -1,0 +1,63 @@
+# Superset Kubernetes values aligned with official docs guidance
+# Source: https://superset.apache.org/admin-docs/installation/kubernetes
+
+image:
+  # Opt out of scarf telemetry endpoint, use direct upstream image
+  repository: apache/superset
+
+service:
+  type: NodePort
+  nodePort:
+    http: 32088
+
+ingress:
+  enabled: false
+
+extraSecretEnv:
+  # Replace for real environments
+  SUPERSET_SECRET_KEY: "replace-this-with-openssl-rand-base64-42"
+
+
+bootstrapScript: |
+  #!/bin/bash
+  # Install DB drivers for metadata + common extras
+  uv pip install .[postgres]
+  if [ ! -f ~/bootstrap ]; then
+    echo "Running Superset with uid {{ .Values.runAsUser }}" > ~/bootstrap
+  fi
+
+init:
+  adminUser:
+    username: admin
+    firstname: Superset
+    lastname: Admin
+    email: admin@superset.local
+    password: admin
+
+postgresql:
+  enabled: true
+  auth:
+    username: superset
+    password: superset
+    database: superset
+  primary:
+    persistence:
+      enabled: false
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false
+  replica:
+    persistence:
+      enabled: false
+
+# Keep local footprint low
+supersetWorker:
+  replicas:
+    enabled: true
+    replicaCount: 0
