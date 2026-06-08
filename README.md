@@ -9,7 +9,6 @@ Repo layout
 - `superset-values-local.yaml` - local values profile (reference)
 - `superset-values-prod.yaml` - production template values (reference)
 - `superset-values-docs-aligned.yaml` - docs-aligned values (reference)
-- `Install.md` - quickest install path
 - `BUILD_SUPERSET_LOCAL_K8S.md` - detailed local runbook
 - `BUILD_SUPERSET_PROD_STYLE_K8S.md` - production-style runbook
 
@@ -20,6 +19,8 @@ kubectl -n local-path-storage rollout status deployment/local-path-provisioner -
 kubectl create namespace superset --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n superset -f manifest/superset-local.yaml
 kubectl rollout status deployment/superset-local -n superset --timeout=300s
+kubectl wait --for=condition=Ready pod -n superset -l app.kubernetes.io/name=postgresql --timeout=300s
+kubectl wait --for=condition=Ready pod -n superset -l app.kubernetes.io/name=redis --timeout=300s
 ```
 
 Verify
