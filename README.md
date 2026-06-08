@@ -35,3 +35,15 @@ Important
 - You can rely on `$KUBECONFIG`; no `--kubeconfig` flag is required if your env var is set.
 - `~` paths are shell-expanded and are fine in docs/scripts.
 - Values files are not applied directly with kubectl. If you change values, re-render a manifest with Helm, then apply that rendered YAML.
+
+Lessons Learned (Superset + InfluxDB 3 Enterprise lab)
+- FlightSQL driver in Superset: if database test fails with `Could not load database driver: BaseEngineSpec` for `datafusion+flightsql://...`, install `flightsql-dbapi` in the Superset runtime.
+- Transport mode matters: for in-cluster `:8181` endpoints serving non-TLS Flight/gRPC (h2c), add `insecure=true` to the SQLAlchemy URI, or TLS handshake fails (`SSL_ERROR_SSL: wrong version number`).
+- Namespace parameter is required: include a namespace header via URI parameter (for example `bucket-name=<name>`), otherwise FlightSQL requests fail with missing database/namespace context.
+- `INFLUXDB3_DISABLE_AUTHZ` scope is limited to `health`, `metrics`, and `ping` endpoints. It does not disable authz for query/FlightSQL APIs.
+- Offline token bootstrap in Kubernetes: use Secret `--from-file` for token JSON artifacts. `--from-literal` only stores strings and does not persist token JSON content.
+- Mount token files into the pod and point env vars to mounted paths:
+  - `INFLUXDB3_ADMIN_TOKEN_FILE=/plugins/admin-token-offline.json`
+  - `INFLUXDB3_PERMISSION_TOKENS_FILE=/plugins/permission-tokens-offline.json`
+- Permission token bootstrap can pre-create lab namespaces/databases using `create_databases` in the permission token file.
+- Current observed caveat: HTTP SQL API worked with bootstrapped permission tokens in this lab, while FlightSQL still returned an authz verification error for schema-related actions. Treat this as a server-side authz behavior to validate per version/build.
